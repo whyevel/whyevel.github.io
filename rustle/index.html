@@ -63,6 +63,9 @@ body{margin:0; background:var(--ink); color:var(--cream);
 .rustore .big{font-weight:700; font-size:1.24rem; letter-spacing:.2px}
 .hint{margin-top:24px; font-weight:600; font-size:.82rem; color:rgba(240,234,208,.8);
   text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.soon{margin-top:28px; font-weight:700; font-size:1.06rem; color:#FFFDF4; max-width:20rem;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.24);
+  padding:14px 22px; border-radius:16px; text-shadow:0 2px 8px rgba(0,0,0,.5); backdrop-filter:blur(4px)}
 .preview-tag{position:fixed; z-index:5; top:10px; left:50%; transform:translateX(-50%);
   font-weight:700; font-size:.6rem; letter-spacing:.8px; text-transform:uppercase; color:#3a2b12;
   background:#FFD874; padding:5px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.3); text-align:center}
@@ -90,13 +93,46 @@ body{margin:0; background:var(--ink); color:var(--cream);
     </a>
   </div>
 
+  <div class="soon" id="soon" hidden></div>
   <p class="hint">Сможешь побить рекорд? 🍃</p>
 </main>
 <script>
-document.querySelectorAll('.badge-link[data-store="gp"]').forEach(function(a){
-  a.addEventListener('click', function(e){ e.preventDefault();
-    alert('Google Play появится после выхода в продакшен. Сейчас доступен RuStore.'); });
-});
+(function(){
+  // ⚙️ Когда сторы выйдут — поставь live:true (правится прямо тут, без пересборки игры)
+  var GPLAY_LIVE=false, APPSTORE_LIVE=false;
+  var GPLAY_URL="https://play.google.com/store/apps/details?id=com.rustle.game";
+  var APPSTORE_URL="https://apps.apple.com/app/id0000000000"; // подставить реальный id при выходе
+
+  var ua=navigator.userAgent||"";
+  var isIOS=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  var isAndroid=/Android/i.test(ua);
+  var badges=document.querySelector(".badges");
+  var soon=document.getElementById("soon");
+  function showSoon(msg){ if(badges)badges.hidden=true; if(soon){soon.textContent=msg; soon.hidden=false;} }
+
+  var gp=document.querySelector('.badge-link[data-store="gp"]');
+  if(gp)gp.addEventListener("click",function(e){ if(!GPLAY_LIVE){e.preventDefault(); alert("Google Play — скоро! Пока доступен RuStore.");} });
+
+  if(isIOS){
+    if(APPSTORE_LIVE){ location.href=APPSTORE_URL; return; }
+    showSoon("Скоро в App Store 🍃"); return;
+  }
+  if(isAndroid){
+    var done=false;
+    function finish(cc){
+      if(done)return; done=true;
+      if(cc==="RU"||cc==="BY"||!cc){ return; }        // РФ/BY или гео не определилось → лендинг
+      if(GPLAY_LIVE){ location.href=GPLAY_URL; return; }
+      showSoon("Скоро в Google Play 🍃");              // заграница, GP ещё не вышел
+    }
+    var t=setTimeout(function(){finish("");},1600);
+    fetch("https://api.country.is/").then(function(r){return r.json();})
+      .then(function(d){clearTimeout(t); finish(d&&d.country);})
+      .catch(function(){clearTimeout(t); finish("");});
+    return;
+  }
+  // десктоп → лендинг как есть
+})();
 </script>
 
 </body>
